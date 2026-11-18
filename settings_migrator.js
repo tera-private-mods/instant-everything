@@ -4,17 +4,12 @@ const DefaultSettings = {
     "soulbind": true,
     "merge": true,
     "dismantle": true,
+    "cards": true,
 }
 
 module.exports = function MigrateSettings(from_ver, to_ver, settings) {
-    if (from_ver === undefined) {
-        // Migrate legacy config file
-        return Object.assign(Object.assign({}, DefaultSettings), settings);
-    } else if (from_ver === null) {
-        // No config file exists, use default settings
-        return DefaultSettings;
-    } else {
-        // Migrate from older version (using the new system) to latest one
-        throw new Error('So far there is only one settings version and this should never be reached!');
-    }
+    // v2 adds cards while preserving all existing mode choices.
+    if (from_ver === undefined || from_ver === null || from_ver === 1)
+        return Object.assign({}, DefaultSettings, settings);
+    throw new Error(`Unsupported settings migration: ${from_ver} -> ${to_ver}`);
 }

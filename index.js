@@ -1,7 +1,9 @@
 const SettingsUI = require('tera-mod-ui').Settings;
+exports.ClientMod = require('./client');
 
 exports.NetworkMod = function(mod) {
-    const PURPOSES = ['enchant', 'upgrade', 'soulbind', 'merge', 'dismantle'];
+    const PURPOSES = ['enchant', 'upgrade', 'soulbind', 'merge', 'dismantle', 'cards'];
+    let appliedSettings = Object.assign({}, mod.settings);
 
     let hooks = {};
     function hook(purpose, ...args) {
@@ -132,21 +134,38 @@ exports.NetworkMod = function(mod) {
 
             if (mod.settings[purpose]) {
                 disable(purpose);
-                mod.command.message(`Instant ${purpose} disabled!`);
+                mod.command.message(`Instant ${purpose} disabled!${purpose === 'cards' ? ' Restart TERA to apply.' : ''}`);
             } else {
                 enable(purpose);
-                mod.command.message(`Instant ${purpose} enabled!`);
+                mod.command.message(`Instant ${purpose} enabled!${purpose === 'cards' ? ' Restart TERA to apply.' : ''}`);
             }
 
             mod.settings[purpose] = !mod.settings[purpose];
+            appliedSettings = Object.assign({}, mod.settings);
+            mod.saveSettings();
+            if (ui) ui.update(mod.settings);
         }
     });
 
     // Settings UI
     let ui = null;
     if (global.TeraProxy.GUIMode) {
-        ui = new SettingsUI(mod, require('./settings_structure'), mod.settings, { height: 232 });
-        ui.on('update', settings => { mod.settings = settings; });
+        ui = new SettingsUI(mod, require('./settings_structure'), mod.settings, { height: 264 });
+        ui.on('update', settings => {
+            PURPOSES.forEach(purpose => {
+                if (settings[purpose] === appliedSettings[purpose]) return;
+                if (purpose === 'cards') {
+                    mod.command.message('Instant cards setting saved. Restart TERA to apply.');
+                } else if (settings[purpose]) {
+                    enable(purpose);
+                } else {
+                    disable(purpose);
+                }
+            });
+            mod.settings = settings;
+            appliedSettings = Object.assign({}, settings);
+            mod.saveSettings();
+        });
 
         this.destructor = () => {
             if (ui) {

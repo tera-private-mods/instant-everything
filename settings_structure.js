@@ -23,5 +23,10 @@ module.exports = [
         "key": "dismantle",
         "name": "Instant Dismantling",
         "type": "bool"
+    },
+    {
+        "key": "cards",
+        "name": "Instant Card Fusion (restart TERA)",
+        "type": "bool"
     }
 ];
