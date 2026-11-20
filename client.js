@@ -21,13 +21,16 @@ module.exports = class InstantCardsClient {
         const source = path.join(__dirname, RESOURCE);
         const hash = crypto.createHash('sha256').update(fs.readFileSync(source)).digest('hex');
         if (hash !== EXPECTED_HASH) throw Error('Instant cards GPK checksum mismatch. Reinstall the module.');
-        const destination = mod.clientInterface.GPKManager.getFullPath(path.resolve(mod.clientFolder, '..'), path.basename(RESOURCE));
         const symlink = fs.symlinkSync;
         // Preserve Toolbox tracking/cleanup on Windows without symlink privileges.
+        // Toolbox chooses the destination; some forks do not expose mod.clientFolder.
         fs.symlinkSync = function (from, to, type) {
             try { return symlink(from, to, type); }
             catch (error) {
-                if (!['EPERM', 'EACCES'].includes(error.code) || path.resolve(from) !== path.resolve(source) || path.resolve(to) !== path.resolve(destination)) throw error;
+                if (!['EPERM', 'EACCES'].includes(error.code) ||
+                    typeof from !== 'string' || typeof to !== 'string' ||
+                    path.resolve(from) !== path.resolve(source) ||
+                    path.basename(to) !== path.basename(RESOURCE)) throw error;
                 fs.copyFileSync(from, to, fs.constants.COPYFILE_EXCL);
             }
         };
